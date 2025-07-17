@@ -3,7 +3,7 @@ module github.com/c2FmZQ/http3-go
 go 1.24.4
 
 require (
-	github.com/c2FmZQ/quic-api v0.0.0-20250715192448-63f5ccb9786a
+	github.com/c2FmZQ/quic-api v0.53.0
 	github.com/quic-go/qpack v0.5.1
 	github.com/quic-go/quic-go v0.53.0
 	github.com/stretchr/testify v1.10.0
