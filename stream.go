@@ -9,6 +9,8 @@ import (
 	"net/http/httptrace"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	"github.com/quic-go/quic-go"
 
 	"github.com/quic-go/qpack"
@@ -26,7 +28,7 @@ type datagramStream interface {
 	SendDatagram(b []byte) error
 	ReceiveDatagram(ctx context.Context) ([]byte, error)
 
-	QUICStream() *quic.Stream
+	QUICStream() quicapi.Stream
 }
 
 // A Stream is an HTTP/3 stream.
