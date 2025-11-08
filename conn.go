@@ -13,6 +13,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3/qlog"
 	"github.com/quic-go/quic-go/qlogwriter"
@@ -32,7 +34,7 @@ const invalidStreamID = quic.StreamID(-1)
 // It has all methods from the quic.Conn expect for AcceptStream, AcceptUniStream,
 // SendDatagram and ReceiveDatagram.
 type Conn struct {
-	conn *quic.Conn
+	conn quicapi.Conn
 
 	ctx context.Context
 
@@ -59,7 +61,7 @@ type Conn struct {
 
 func newConnection(
 	ctx context.Context,
-	quicConn *quic.Conn,
+	quicConn quicapi.Conn,
 	enableDatagrams bool,
 	isServer bool,
 	logger *slog.Logger,
@@ -89,19 +91,19 @@ func newConnection(
 	return c
 }
 
-func (c *Conn) OpenStream() (*quic.Stream, error) {
+func (c *Conn) OpenStream() (quicapi.Stream, error) {
 	return c.conn.OpenStream()
 }
 
-func (c *Conn) OpenStreamSync(ctx context.Context) (*quic.Stream, error) {
+func (c *Conn) OpenStreamSync(ctx context.Context) (quicapi.Stream, error) {
 	return c.conn.OpenStreamSync(ctx)
 }
 
-func (c *Conn) OpenUniStream() (*quic.SendStream, error) {
+func (c *Conn) OpenUniStream() (quicapi.SendStream, error) {
 	return c.conn.OpenUniStream()
 }
 
-func (c *Conn) OpenUniStreamSync(ctx context.Context) (*quic.SendStream, error) {
+func (c *Conn) OpenUniStreamSync(ctx context.Context) (quicapi.SendStream, error) {
 	return c.conn.OpenUniStreamSync(ctx)
 }
 
@@ -240,7 +242,7 @@ func (c *Conn) CloseWithError(code quic.ApplicationErrorCode, msg string) error 
 	return c.conn.CloseWithError(code, msg)
 }
 
-func (c *Conn) handleUnidirectionalStreams(hijack func(StreamType, quic.ConnectionTracingID, *quic.ReceiveStream, error) (hijacked bool)) {
+func (c *Conn) handleUnidirectionalStreams(hijack func(StreamType, quic.ConnectionTracingID, quicapi.ReceiveStream, error) (hijacked bool)) {
 	var (
 		rcvdControlStr      atomic.Bool
 		rcvdQPACKEncoderStr atomic.Bool
@@ -256,7 +258,7 @@ func (c *Conn) handleUnidirectionalStreams(hijack func(StreamType, quic.Connecti
 			return
 		}
 
-		go func(str *quic.ReceiveStream) {
+		go func(str quicapi.ReceiveStream) {
 			streamType, err := quicvarint.Read(quicvarint.NewReader(str))
 			if err != nil {
 				id := c.Context().Value(quic.ConnectionTracingKey).(quic.ConnectionTracingID)
@@ -316,7 +318,7 @@ func (c *Conn) handleUnidirectionalStreams(hijack func(StreamType, quic.Connecti
 	}
 }
 
-func (c *Conn) handleControlStream(str *quic.ReceiveStream) {
+func (c *Conn) handleControlStream(str quicapi.ReceiveStream) {
 	fp := &frameParser{closeConn: c.conn.CloseWithError, r: str, streamID: str.StreamID()}
 	f, err := fp.ParseNext(c.qlogger)
 	if err != nil {

@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	"github.com/quic-go/qpack"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3/qlog"
@@ -133,7 +135,7 @@ func generateLeafCert(ca *x509.Certificate, caPriv crypto.PrivateKey) (*x509.Cer
 func getTLSConfig() *tls.Config       { return tlsConfig.Clone() }
 func getTLSClientConfig() *tls.Config { return tlsClientConfig.Clone() }
 
-func newConnPair(t *testing.T) (client, server *quic.Conn) {
+func newConnPair(t *testing.T) (client, server quicapi.Conn) {
 	t.Helper()
 
 	return newConnPairWithRecorder(t, nil, nil)
@@ -149,10 +151,10 @@ func (t *qlogTrace) AddProducer() qlogwriter.Recorder {
 	return t.recorder
 }
 
-func newConnPairWithRecorder(t *testing.T, clientRecorder, serverRecorder qlogwriter.Recorder) (client, server *quic.Conn) {
+func newConnPairWithRecorder(t *testing.T, clientRecorder, serverRecorder qlogwriter.Recorder) (client, server quicapi.Conn) {
 	t.Helper()
 
-	ln, err := quic.ListenEarly(
+	ln, err := quicapi.ListenEarly(
 		newUDPConnLocalhost(t),
 		getTLSConfig(),
 		&quic.Config{
@@ -167,7 +169,7 @@ func newConnPairWithRecorder(t *testing.T, clientRecorder, serverRecorder qlogwr
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	cl, err := quic.DialEarly(
+	cl, err := quicapi.DialEarly(
 		ctx,
 		newUDPConnLocalhost(t),
 		ln.Addr(),
@@ -192,10 +194,10 @@ func newConnPairWithRecorder(t *testing.T, clientRecorder, serverRecorder qlogwr
 	return cl, conn
 }
 
-func newConnPairWithDatagrams(t *testing.T, clientRecorder, serverRecorder qlogwriter.Recorder) (client, server *quic.Conn) {
+func newConnPairWithDatagrams(t *testing.T, clientRecorder, serverRecorder qlogwriter.Recorder) (client, server quicapi.Conn) {
 	t.Helper()
 
-	ln, err := quic.ListenEarly(
+	ln, err := quicapi.ListenEarly(
 		newUDPConnLocalhost(t),
 		getTLSConfig(),
 		&quic.Config{
@@ -211,7 +213,7 @@ func newConnPairWithDatagrams(t *testing.T, clientRecorder, serverRecorder qlogw
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	cl, err := quic.DialEarly(
+	cl, err := quicapi.DialEarly(
 		ctx,
 		newUDPConnLocalhost(t),
 		ln.Addr(),
