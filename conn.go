@@ -11,6 +11,8 @@ import (
 	"sync"
 	"sync/atomic"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3/qlog"
 	"github.com/quic-go/quic-go/qlogwriter"
@@ -26,7 +28,7 @@ const invalidStreamID = quic.StreamID(-1)
 // It provides HTTP/3 specific functionality by wrapping a quic.Conn,
 // in particular handling of unidirectional HTTP/3 streams, SETTINGS and datagrams.
 type rawConn struct {
-	conn *quic.Conn
+	conn quicapi.Conn
 
 	logger *slog.Logger
 
@@ -38,7 +40,7 @@ type rawConn struct {
 	rcvdControlStr      atomic.Bool
 	rcvdQPACKEncoderStr atomic.Bool
 	rcvdQPACKDecoderStr atomic.Bool
-	controlStrHandler   func(*quic.ReceiveStream, *frameParser) // is called *after* the SETTINGS frame was parsed
+	controlStrHandler   func(quicapi.ReceiveStream, *frameParser) // is called *after* the SETTINGS frame was parsed
 
 	onStreamsEmpty func()
 
@@ -50,10 +52,10 @@ type rawConn struct {
 }
 
 func newRawConn(
-	quicConn *quic.Conn,
+	quicConn quicapi.Conn,
 	enableDatagrams bool,
 	onStreamsEmpty func(),
-	controlStrHandler func(*quic.ReceiveStream, *frameParser),
+	controlStrHandler func(quicapi.ReceiveStream, *frameParser),
 	qlogger qlogwriter.Recorder,
 	logger *slog.Logger,
 ) *rawConn {
@@ -73,13 +75,13 @@ func newRawConn(
 	return c
 }
 
-func (c *rawConn) OpenUniStream() (*quic.SendStream, error) {
+func (c *rawConn) OpenUniStream() (quicapi.SendStream, error) {
 	return c.conn.OpenUniStream()
 }
 
 // openControlStream opens the control stream and sends the SETTINGS frame.
 // It returns the control stream (needed by the server for sending GOAWAY later).
-func (c *rawConn) openControlStream(settings *settingsFrame) (*quic.SendStream, error) {
+func (c *rawConn) openControlStream(settings *settingsFrame) (quicapi.SendStream, error) {
 	c.qloggerWG.Add(1)
 	defer c.qloggerWG.Done()
 
@@ -113,7 +115,7 @@ func (c *rawConn) openControlStream(settings *settingsFrame) (*quic.SendStream, 
 	return str, nil
 }
 
-func (c *rawConn) TrackStream(str *quic.Stream) *stateTrackingStream {
+func (c *rawConn) TrackStream(str quicapi.Stream) *stateTrackingStream {
 	hstr := newStateTrackingStream(str, c, func(b []byte) error { return c.sendDatagram(str.StreamID(), b) })
 
 	c.streamMx.Lock()
@@ -155,7 +157,7 @@ func (c *rawConn) CloseWithError(code quic.ApplicationErrorCode, msg string) err
 	return c.conn.CloseWithError(code, msg)
 }
 
-func (c *rawConn) handleUnidirectionalStream(str *quic.ReceiveStream, isServer bool) {
+func (c *rawConn) handleUnidirectionalStream(str quicapi.ReceiveStream, isServer bool) {
 	c.qloggerWG.Add(1)
 	defer c.qloggerWG.Done()
 
@@ -202,7 +204,7 @@ func (c *rawConn) handleUnidirectionalStream(str *quic.ReceiveStream, isServer b
 	c.handleControlStream(str)
 }
 
-func (c *rawConn) handleControlStream(str *quic.ReceiveStream) {
+func (c *rawConn) handleControlStream(str quicapi.ReceiveStream) {
 	fp := &frameParser{closeConn: c.conn.CloseWithError, r: str, streamID: str.StreamID()}
 	f, err := fp.ParseNext(c.qlogger)
 	if err != nil {

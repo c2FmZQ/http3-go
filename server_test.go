@@ -14,8 +14,10 @@ import (
 	"testing"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/http3/internal/testdata"
+	"github.com/c2FmZQ/http3-go/internal/testdata"
 	"github.com/quic-go/quic-go/http3/qlog"
 	"github.com/quic-go/quic-go/qlogwriter"
 	"github.com/quic-go/quic-go/quicvarint"
@@ -521,7 +523,7 @@ func TestServerAltSvcFromListenersAndConns(t *testing.T) {
 }
 
 func testServerAltSvcFromListenersAndConns(t *testing.T, versions []quic.Version) {
-	ln1, err := quic.ListenEarly(newUDPConnLocalhost(t), getTLSConfig(), nil)
+	ln1, err := quicapi.ListenEarly(newUDPConnLocalhost(t), getTLSConfig(), nil)
 	require.NoError(t, err)
 	port1 := ln1.Addr().(*net.UDPAddr).Port
 
@@ -583,7 +585,7 @@ func TestServerAltSvcFromPort(t *testing.T) {
 	_, ok := getAltSvc(s)
 	require.False(t, ok)
 
-	ln, err := quic.ListenEarly(newUDPConnLocalhost(t), getTLSConfig(), nil)
+	ln, err := quicapi.ListenEarly(newUDPConnLocalhost(t), getTLSConfig(), nil)
 	require.NoError(t, err)
 	done := make(chan struct{})
 	go func() {
@@ -608,7 +610,7 @@ func TestServerAltSvcFromPort(t *testing.T) {
 }
 
 type unixSocketListener struct {
-	*quic.EarlyListener
+	quicapi.EarlyListener
 }
 
 func (l *unixSocketListener) Addr() net.Addr {
@@ -629,7 +631,7 @@ func TestServerAltSvcFromUnixSocket(t *testing.T) {
 }
 
 func testServerAltSvcFromUnixSocket(t *testing.T, addr string) (altSvc string, ok bool) {
-	ln, err := quic.ListenEarly(newUDPConnLocalhost(t), testdata.GetTLSConfig(), nil)
+	ln, err := quicapi.ListenEarly(newUDPConnLocalhost(t), testdata.GetTLSConfig(), nil)
 	require.NoError(t, err)
 
 	var logBuf bytes.Buffer

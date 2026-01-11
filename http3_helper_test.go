@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	"github.com/quic-go/qpack"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3/qlog"
@@ -168,7 +170,7 @@ func withServerBidiStreamLimit(limit int64) connPairOpt {
 	return func(o *connPairOpts) { o.serverBidiStreamLimit = limit }
 }
 
-func newConnPair(t *testing.T, opts ...connPairOpt) (client, server *quic.Conn) {
+func newConnPair(t *testing.T, opts ...connPairOpt) (client, server quicapi.Conn) {
 	t.Helper()
 
 	var o connPairOpts
@@ -176,7 +178,7 @@ func newConnPair(t *testing.T, opts ...connPairOpt) (client, server *quic.Conn) 
 		opt(&o)
 	}
 
-	ln, err := quic.ListenEarly(
+	ln, err := quicapi.ListenEarly(
 		newUDPConnLocalhost(t),
 		getTLSConfig(),
 		&quic.Config{
@@ -193,7 +195,7 @@ func newConnPair(t *testing.T, opts ...connPairOpt) (client, server *quic.Conn) 
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	cl, err := quic.DialEarly(
+	cl, err := quicapi.DialEarly(
 		ctx,
 		newUDPConnLocalhost(t),
 		ln.Addr(),

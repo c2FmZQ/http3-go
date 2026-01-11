@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	"github.com/quic-go/qpack"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3/qlog"
@@ -48,7 +50,7 @@ var defaultQuicConfig = &quic.Config{
 
 // ClientConn is an HTTP/3 client doing requests to a single remote server.
 type ClientConn struct {
-	conn    *quic.Conn
+	conn    quicapi.Conn
 	rawConn *rawConn
 
 	decoder *qpack.Decoder
@@ -81,7 +83,7 @@ type ClientConn struct {
 var _ http.RoundTripper = &ClientConn{}
 
 func newClientConn(
-	conn *quic.Conn,
+	conn quicapi.Conn,
 	enableDatagrams bool,
 	additionalSettings map[uint64]uint64,
 	maxResponseHeaderBytes int,
@@ -204,11 +206,11 @@ func (c *ClientConn) openRequestStream(
 	), nil
 }
 
-func (c *ClientConn) handleUnidirectionalStream(str *quic.ReceiveStream) {
+func (c *ClientConn) handleUnidirectionalStream(str quicapi.ReceiveStream) {
 	c.rawConn.handleUnidirectionalStream(str, false)
 }
 
-func (c *ClientConn) handleControlStream(str *quic.ReceiveStream, fp *frameParser) {
+func (c *ClientConn) handleControlStream(str quicapi.ReceiveStream, fp *frameParser) {
 	for {
 		f, err := fp.ParseNext(c.qlogger)
 		if err != nil {
@@ -491,12 +493,12 @@ type RawClientConn struct {
 }
 
 // HandleUnidirectionalStream handles an incoming unidirectional stream.
-func (c *RawClientConn) HandleUnidirectionalStream(str *quic.ReceiveStream) {
+func (c *RawClientConn) HandleUnidirectionalStream(str quicapi.ReceiveStream) {
 	c.rawConn.handleUnidirectionalStream(str, false)
 }
 
 // HandleBidirectionalStream handles an incoming bidirectional stream.
-func (c *ClientConn) HandleBidirectionalStream(str *quic.Stream) {
+func (c *ClientConn) HandleBidirectionalStream(str quicapi.Stream) {
 	// According to RFC 9114, the server is not allowed to open bidirectional streams.
 	c.rawConn.CloseWithError(
 		quic.ApplicationErrorCode(ErrCodeStreamCreationError),

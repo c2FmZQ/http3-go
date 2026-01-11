@@ -15,6 +15,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3/qlog"
 	"github.com/quic-go/quic-go/qlogwriter"
@@ -35,15 +37,15 @@ const (
 
 // A QUICListener listens for incoming QUIC connections.
 type QUICListener interface {
-	Accept(context.Context) (*quic.Conn, error)
+	Accept(context.Context) (quicapi.Conn, error)
 	Addr() net.Addr
 	io.Closer
 }
 
-var _ QUICListener = &quic.EarlyListener{}
+var _ QUICListener = (quicapi.EarlyListener)(nil)
 
 // ConfigureTLSConfig creates a new tls.Config which can be used
-// to create a quic.Listener meant for serving HTTP/3.
+// to create a quicapi.Listener meant for serving HTTP/3.
 func ConfigureTLSConfig(tlsConf *tls.Config) *tls.Config {
 	// Workaround for https://github.com/golang/go/issues/60506.
 	// This initializes the session tickets _before_ cloning the config.
@@ -153,7 +155,7 @@ type Server struct {
 
 	// ConnContext optionally specifies a function that modifies the context used for a new connection c.
 	// The provided ctx has a ServerContextKey value.
-	ConnContext func(ctx context.Context, c *quic.Conn) context.Context
+	ConnContext func(ctx context.Context, c quicapi.Conn) context.Context
 
 	Logger *slog.Logger
 
@@ -235,7 +237,7 @@ func (s *Server) decreaseConnCount() {
 }
 
 // ServeQUICConn serves a single QUIC connection.
-func (s *Server) ServeQUICConn(conn *quic.Conn) error {
+func (s *Server) ServeQUICConn(conn quicapi.Conn) error {
 	s.mutex.Lock()
 	if s.closed {
 		s.mutex.Unlock()
@@ -322,9 +324,9 @@ func (s *Server) setupListenerForConn(tlsConf *tls.Config, conn net.PacketConn) 
 		if addr == "" {
 			addr = ":https"
 		}
-		ln, err = quic.ListenAddrEarly(addr, baseConf, quicConf)
+		ln, err = quicapi.ListenAddrEarly(addr, baseConf, quicConf)
 	} else {
-		ln, err = quic.ListenEarly(conn, baseConf, quicConf)
+		ln, err = quicapi.ListenEarly(conn, baseConf, quicConf)
 	}
 	if err != nil {
 		return nil, err
@@ -417,7 +419,7 @@ func (s *Server) removeListener(l *QUICListener) {
 	s.generateAltSvcHeader()
 }
 
-func (s *Server) NewRawServerConn(conn *quic.Conn) (*RawServerConn, error) {
+func (s *Server) NewRawServerConn(conn quicapi.Conn) (*RawServerConn, error) {
 	hconn, _, _, err := s.newRawServerConn(conn)
 	if err != nil {
 		return nil, err
@@ -425,7 +427,7 @@ func (s *Server) NewRawServerConn(conn *quic.Conn) (*RawServerConn, error) {
 	return hconn, nil
 }
 
-func (s *Server) newRawServerConn(conn *quic.Conn) (*RawServerConn, *quic.SendStream, qlogwriter.Recorder, error) {
+func (s *Server) newRawServerConn(conn quicapi.Conn) (*RawServerConn, quicapi.SendStream, qlogwriter.Recorder, error) {
 	var qlogger qlogwriter.Recorder
 	if qlogTrace := conn.QlogTrace(); qlogTrace != nil && qlogTrace.SupportsSchemas(qlog.EventSchema) {
 		qlogger = qlogTrace.AddProducer()
@@ -467,7 +469,7 @@ func (s *Server) newRawServerConn(conn *quic.Conn) (*RawServerConn, *quic.SendSt
 
 // handleConn handles the HTTP/3 exchange on a QUIC connection.
 // It blocks until all HTTP handlers for all streams have returned.
-func (s *Server) handleConn(conn *quic.Conn) error {
+func (s *Server) handleConn(conn quicapi.Conn) error {
 	hconn, ctrlStr, qlogger, err := s.newRawServerConn(conn)
 	if err != nil {
 		return err
