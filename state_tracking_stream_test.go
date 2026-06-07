@@ -8,13 +8,15 @@ import (
 	"testing"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	"github.com/quic-go/quic-go"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func newStreamPair(t *testing.T) (client, server *quic.Stream) {
+func newStreamPair(t *testing.T) (client, server quicapi.Stream) {
 	t.Helper()
 
 	clientConn, serverConn := newConnPair(t)

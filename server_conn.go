@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	"github.com/quic-go/qpack"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/qlogwriter"
@@ -34,7 +36,7 @@ type RawServerConn struct {
 }
 
 func newRawServerConn(
-	conn *quic.Conn,
+	conn quicapi.Conn,
 	enableDatagrams bool,
 	idleTimeout time.Duration,
 	qlogger qlogwriter.Recorder,
@@ -80,7 +82,7 @@ func (c *RawServerConn) CloseWithError(code quic.ApplicationErrorCode, msg strin
 // HandleRequestStream handles an HTTP/3 request on a bidirectional request stream.
 // The stream can either be obtained by calling AcceptStream on the underlying QUIC connection,
 // or (internally) by using the server's stream accept loop.
-func (c *RawServerConn) HandleRequestStream(str *quic.Stream) {
+func (c *RawServerConn) HandleRequestStream(str quicapi.Stream) {
 	hstr := c.rawConn.TrackStream(str)
 	c.handleRequestStream(hstr)
 }
@@ -92,7 +94,7 @@ func (c *RawServerConn) requestMaxHeaderBytes() int {
 	return c.maxHeaderBytes
 }
 
-func (c *RawServerConn) openControlStream(settings *settingsFrame) (*quic.SendStream, error) {
+func (c *RawServerConn) openControlStream(settings *settingsFrame) (quicapi.SendStream, error) {
 	return c.rawConn.openControlStream(settings)
 }
 
@@ -256,6 +258,6 @@ func (c *RawServerConn) rejectWithHeaderFieldsTooLarge(str *stateTrackingStream)
 }
 
 // HandleUnidirectionalStream handles an incoming unidirectional stream.
-func (c *RawServerConn) HandleUnidirectionalStream(str *quic.ReceiveStream) {
+func (c *RawServerConn) HandleUnidirectionalStream(str quicapi.ReceiveStream) {
 	c.rawConn.handleUnidirectionalStream(str, true)
 }
