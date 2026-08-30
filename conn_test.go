@@ -7,8 +7,10 @@ import (
 	"testing"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
+	"github.com/c2FmZQ/http3-go/qlog"
 	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/http3/qlog"
 	"github.com/quic-go/quic-go/qlogwriter"
 	"github.com/quic-go/quic-go/quicvarint"
 	"github.com/quic-go/quic-go/testutils/events"
@@ -248,9 +250,9 @@ func testConnControlStreamHandler(t *testing.T, useHandler bool) {
 	localConn, peerConn := newConnPair(t)
 
 	handlerCalled := make(chan struct{})
-	var controlStrHandler func(*quic.ReceiveStream, *frameParser)
+	var controlStrHandler func(quicapi.ReceiveStream, *frameParser)
 	if useHandler {
-		controlStrHandler = func(*quic.ReceiveStream, *frameParser) { close(handlerCalled) }
+		controlStrHandler = func(quicapi.ReceiveStream, *frameParser) { close(handlerCalled) }
 	}
 	conn := newRawConn(localConn, false, nil, controlStrHandler, nil, nil)
 

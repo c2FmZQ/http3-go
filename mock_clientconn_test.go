@@ -14,7 +14,8 @@ import (
 	http "net/http"
 	reflect "reflect"
 
-	quic "github.com/quic-go/quic-go"
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -121,7 +122,7 @@ func (c *MockClientConnRoundTripCall) DoAndReturn(f func(*http.Request) (*http.R
 }
 
 // handleUnidirectionalStream mocks base method.
-func (m *MockClientConn) handleUnidirectionalStream(arg0 *quic.ReceiveStream) {
+func (m *MockClientConn) handleUnidirectionalStream(arg0 quicapi.ReceiveStream) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "handleUnidirectionalStream", arg0)
 }
@@ -145,13 +146,13 @@ func (c *MockClientConnhandleUnidirectionalStreamCall) Return() *MockClientConnh
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockClientConnhandleUnidirectionalStreamCall) Do(f func(*quic.ReceiveStream)) *MockClientConnhandleUnidirectionalStreamCall {
+func (c *MockClientConnhandleUnidirectionalStreamCall) Do(f func(quicapi.ReceiveStream)) *MockClientConnhandleUnidirectionalStreamCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockClientConnhandleUnidirectionalStreamCall) DoAndReturn(f func(*quic.ReceiveStream)) *MockClientConnhandleUnidirectionalStreamCall {
+func (c *MockClientConnhandleUnidirectionalStreamCall) DoAndReturn(f func(quicapi.ReceiveStream)) *MockClientConnhandleUnidirectionalStreamCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
