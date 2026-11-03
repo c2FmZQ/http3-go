@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	"github.com/quic-go/qpack"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/qlogwriter"
@@ -36,7 +38,7 @@ type RawServerConn struct {
 }
 
 func newRawServerConn(
-	conn *quic.Conn,
+	conn quicapi.Conn,
 	enableDatagrams bool,
 	idleTimeout time.Duration,
 	qlogger qlogwriter.Recorder,
@@ -80,7 +82,7 @@ func (c *RawServerConn) CloseWithError(code quic.ApplicationErrorCode, msg strin
 // HandleRequestStream handles an HTTP/3 request on a bidirectional request stream.
 // The stream can either be obtained by calling [quic.Conn.AcceptStream] on the underlying QUIC connection,
 // or (internally) by using the server's stream accept loop.
-func (c *RawServerConn) HandleRequestStream(str *quic.Stream) {
+func (c *RawServerConn) HandleRequestStream(str quicapi.Stream) {
 	// HTTP/3 handles this stream, so the peer can replace it as soon as it completes.
 	str.ReleaseStreamCredit()
 	// the handler can produce qlog events until it returns, even after the connection was closed
@@ -97,7 +99,7 @@ func (c *RawServerConn) requestMaxHeaderBytes() int {
 	return c.maxHeaderBytes
 }
 
-func (c *RawServerConn) openControlStream(settings *settingsFrame) (*quic.SendStream, error) {
+func (c *RawServerConn) openControlStream(settings *settingsFrame) (quicapi.SendStream, error) {
 	return c.rawConn.openControlStream(settings)
 }
 
@@ -269,7 +271,7 @@ func (c *RawServerConn) handleRequestStream(str *stateTrackingStream) {
 	str.Close()
 }
 
-func (c *RawServerConn) handleControlStream(_ *quic.ReceiveStream, fp *frameParser) {
+func (c *RawServerConn) handleControlStream(_ quicapi.ReceiveStream, fp *frameParser) {
 	for {
 		f, err := fp.ParseNext(c.qlogger)
 		if err != nil {
@@ -314,6 +316,6 @@ func (c *RawServerConn) rejectWithHeaderFieldsTooLarge(str *stateTrackingStream)
 }
 
 // HandleUnidirectionalStream handles an incoming unidirectional stream.
-func (c *RawServerConn) HandleUnidirectionalStream(str *quic.ReceiveStream) {
+func (c *RawServerConn) HandleUnidirectionalStream(str quicapi.ReceiveStream) {
 	c.rawConn.handleUnidirectionalStream(str, true)
 }

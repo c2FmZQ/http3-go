@@ -13,7 +13,7 @@ import (
 
 	"github.com/quic-go/qpack"
 	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/http3/qlog"
+	"github.com/c2FmZQ/http3-go/qlog"
 	"github.com/quic-go/quic-go/qlogwriter"
 	"github.com/quic-go/quic-go/quicvarint"
 	"github.com/quic-go/quic-go/testutils/events"

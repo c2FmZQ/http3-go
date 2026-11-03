@@ -7,8 +7,10 @@ import (
 	"testing"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
+	"github.com/c2FmZQ/http3-go/qlog"
 	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/http3/qlog"
 	"github.com/quic-go/quic-go/qlogwriter"
 	"github.com/quic-go/quic-go/quicvarint"
 	"github.com/quic-go/quic-go/testutils/events"
@@ -16,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func nopControlStrHandler(*quic.ReceiveStream, *frameParser) {}
+func nopControlStrHandler(quicapi.ReceiveStream, *frameParser) {}
 
 func TestConnReceiveSettings(t *testing.T) {
 	var eventRecorder events.Recorder
@@ -255,7 +257,7 @@ func TestConnControlStreamHandler(t *testing.T) {
 	localConn, peerConn := newConnPair(t)
 
 	handlerCalled := make(chan struct{})
-	conn := newRawConn(localConn, false, nil, func(*quic.ReceiveStream, *frameParser) { close(handlerCalled) }, nil, nil)
+	conn := newRawConn(localConn, false, nil, func(quicapi.ReceiveStream, *frameParser) { close(handlerCalled) }, nil, nil)
 
 	b := quicvarint.Append(nil, streamTypeControlStream)
 	b = (&settingsFrame{}).Append(b)
