@@ -14,7 +14,8 @@ import (
 	net "net"
 	reflect "reflect"
 
-	quic "github.com/quic-go/quic-go"
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -43,10 +44,10 @@ func (m *MockQUICListener) EXPECT() *MockQUICListenerMockRecorder {
 }
 
 // Accept mocks base method.
-func (m *MockQUICListener) Accept(arg0 context.Context) (*quic.Conn, error) {
+func (m *MockQUICListener) Accept(arg0 context.Context) (quicapi.Conn, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Accept", arg0)
-	ret0, _ := ret[0].(*quic.Conn)
+	ret0, _ := ret[0].(quicapi.Conn)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -64,19 +65,19 @@ type MockQUICListenerAcceptCall struct {
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockQUICListenerAcceptCall) Return(arg0 *quic.Conn, arg1 error) *MockQUICListenerAcceptCall {
+func (c *MockQUICListenerAcceptCall) Return(arg0 quicapi.Conn, arg1 error) *MockQUICListenerAcceptCall {
 	c.Call = c.Call.Return(arg0, arg1)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockQUICListenerAcceptCall) Do(f func(context.Context) (*quic.Conn, error)) *MockQUICListenerAcceptCall {
+func (c *MockQUICListenerAcceptCall) Do(f func(context.Context) (quicapi.Conn, error)) *MockQUICListenerAcceptCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockQUICListenerAcceptCall) DoAndReturn(f func(context.Context) (*quic.Conn, error)) *MockQUICListenerAcceptCall {
+func (c *MockQUICListenerAcceptCall) DoAndReturn(f func(context.Context) (quicapi.Conn, error)) *MockQUICListenerAcceptCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

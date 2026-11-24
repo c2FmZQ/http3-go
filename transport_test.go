@@ -14,6 +14,8 @@ import (
 	"testing/synctest"
 	"time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	"github.com/quic-go/quic-go"
 
 	"github.com/stretchr/testify/assert"
@@ -137,7 +139,7 @@ func TestTransportDialHostname(t *testing.T) {
 	}
 	hostnameChan := make(chan hostnameConfig, 1)
 	tr := &Transport{
-		Dial: func(_ context.Context, hostname string, tlsConf *tls.Config, _ *quic.Config) (*quic.Conn, error) {
+		Dial: func(_ context.Context, hostname string, tlsConf *tls.Config, _ *quic.Config) (quicapi.Conn, error) {
 			hostnameChan <- hostnameConfig{
 				dialHostname:  hostname,
 				tlsServerName: tlsConf.ServerName,
@@ -179,7 +181,7 @@ func TestTransportDatagrams(t *testing.T) {
 	t.Run("default quic.Config", func(t *testing.T) {
 		tr := &Transport{
 			EnableDatagrams: true,
-			Dial: func(_ context.Context, _ string, _ *tls.Config, quicConf *quic.Config) (*quic.Conn, error) {
+			Dial: func(_ context.Context, _ string, _ *tls.Config, quicConf *quic.Config) (quicapi.Conn, error) {
 				require.True(t, quicConf.EnableDatagrams)
 				return nil, assert.AnError
 			},
@@ -194,7 +196,7 @@ func TestTransportDatagrams(t *testing.T) {
 		tr := &Transport{
 			EnableDatagrams: true,
 			QUICConfig:      &quic.Config{EnableDatagrams: false},
-			Dial: func(_ context.Context, _ string, _ *tls.Config, quicConf *quic.Config) (*quic.Conn, error) {
+			Dial: func(_ context.Context, _ string, _ *tls.Config, quicConf *quic.Config) (quicapi.Conn, error) {
 				t.Fatal("dial should not be called")
 				return nil, nil
 			},
@@ -219,7 +221,7 @@ func TestTransportDoesNotModifyQUICConfig(t *testing.T) {
 	qconf := &quic.Config{Versions: []quic.Version{quic.Version1}}
 	tr := &Transport{
 		QUICConfig: qconf,
-		Dial: func(context.Context, string, *tls.Config, *quic.Config) (*quic.Conn, error) {
+		Dial: func(context.Context, string, *tls.Config, *quic.Config) (quicapi.Conn, error) {
 			return nil, assert.AnError
 		},
 	}
@@ -235,11 +237,11 @@ func TestTransportConnectionReuse(t *testing.T) {
 	cl := NewMockClientConn(mockCtrl)
 	var dialCount int
 	tr := &Transport{
-		Dial: func(context.Context, string, *tls.Config, *quic.Config) (*quic.Conn, error) {
+		Dial: func(context.Context, string, *tls.Config, *quic.Config) (quicapi.Conn, error) {
 			dialCount++
 			return conn, nil
 		},
-		newClientConn: func(*quic.Conn) clientConn { return cl },
+		newClientConn: func(quicapi.Conn) clientConn { return cl },
 	}
 
 	req1 := httptest.NewRequest(http.MethodGet, "https://quic-go.net/file1.html", nil)
@@ -332,11 +334,11 @@ func testTransportConnectionRedial(t *testing.T, req *http.Request, roundtripErr
 	cl := NewMockClientConn(mockCtrl)
 	var dialCount int
 	tr := &Transport{
-		Dial: func(context.Context, string, *tls.Config, *quic.Config) (*quic.Conn, error) {
+		Dial: func(context.Context, string, *tls.Config, *quic.Config) (quicapi.Conn, error) {
 			dialCount++
 			return conn, nil
 		},
-		newClientConn: func(*quic.Conn) clientConn { return cl },
+		newClientConn: func(quicapi.Conn) clientConn { return cl },
 	}
 
 	var body string
@@ -368,11 +370,11 @@ func TestTransportRequestContextCancellation(t *testing.T) {
 	conn, _ := newConnPair(t)
 	var dialCount int
 	tr := &Transport{
-		Dial: func(context.Context, string, *tls.Config, *quic.Config) (*quic.Conn, error) {
+		Dial: func(context.Context, string, *tls.Config, *quic.Config) (quicapi.Conn, error) {
 			dialCount++
 			return conn, nil
 		},
-		newClientConn: func(*quic.Conn) clientConn { return cl },
+		newClientConn: func(quicapi.Conn) clientConn { return cl },
 	}
 
 	// the first request succeeds
@@ -412,14 +414,14 @@ func TestTransportDialSurvivesRequestCancellation(t *testing.T) {
 	conn, _ := newConnPair(t)
 	unblockDial := make(chan struct{})
 	tr := &Transport{
-		Dial: func(ctx context.Context, _ string, _ *tls.Config, _ *quic.Config) (*quic.Conn, error) {
+		Dial: func(ctx context.Context, _ string, _ *tls.Config, _ *quic.Config) (quicapi.Conn, error) {
 			<-unblockDial
 			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
 			return conn, nil
 		},
-		newClientConn: func(*quic.Conn) clientConn { return cl },
+		newClientConn: func(quicapi.Conn) clientConn { return cl },
 	}
 
 	// canceling the request doesn't cancel the dial...
@@ -444,14 +446,14 @@ func TestTransportConnetionRedialHandshakeError(t *testing.T) {
 	conn, _ := newConnPair(t)
 	var dialCount int
 	tr := &Transport{
-		Dial: func(context.Context, string, *tls.Config, *quic.Config) (*quic.Conn, error) {
+		Dial: func(context.Context, string, *tls.Config, *quic.Config) (quicapi.Conn, error) {
 			dialCount++
 			if dialCount == 1 {
 				return nil, assert.AnError
 			}
 			return conn, nil
 		},
-		newClientConn: func(*quic.Conn) clientConn { return cl },
+		newClientConn: func(quicapi.Conn) clientConn { return cl },
 	}
 
 	req1 := httptest.NewRequest(http.MethodGet, "https://quic-go.net/file1.html", nil)
@@ -471,10 +473,10 @@ func TestTransportCloseEstablishedConnections(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	conn, serverConn := newConnPair(t)
 	tr := &Transport{
-		Dial: func(context.Context, string, *tls.Config, *quic.Config) (*quic.Conn, error) {
+		Dial: func(context.Context, string, *tls.Config, *quic.Config) (quicapi.Conn, error) {
 			return conn, nil
 		},
-		newClientConn: func(*quic.Conn) clientConn {
+		newClientConn: func(quicapi.Conn) clientConn {
 			cl := NewMockClientConn(mockCtrl)
 			cl.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{}, nil)
 			return cl
@@ -498,7 +500,7 @@ func TestTransportCloseEstablishedConnections(t *testing.T) {
 
 func TestTransportCloseInFlightDials(t *testing.T) {
 	tr := &Transport{
-		Dial: func(ctx context.Context, _ string, _ *tls.Config, _ *quic.Config) (*quic.Conn, error) {
+		Dial: func(ctx context.Context, _ string, _ *tls.Config, _ *quic.Config) (quicapi.Conn, error) {
 			var err error
 			select {
 			case <-ctx.Done():
@@ -538,7 +540,7 @@ func TestTransportCloseIdleConnections(t *testing.T) {
 	conn2, serverConn2 := newConnPair(t)
 	roundTripCalled := make(chan struct{})
 	tr := &Transport{
-		Dial: func(_ context.Context, hostname string, _ *tls.Config, _ *quic.Config) (*quic.Conn, error) {
+		Dial: func(_ context.Context, hostname string, _ *tls.Config, _ *quic.Config) (quicapi.Conn, error) {
 			switch hostname {
 			case "site1.com:443":
 				return conn1, nil
@@ -549,7 +551,7 @@ func TestTransportCloseIdleConnections(t *testing.T) {
 				return nil, errors.New("unexpected hostname")
 			}
 		},
-		newClientConn: func(*quic.Conn) clientConn {
+		newClientConn: func(quicapi.Conn) clientConn {
 			cl := NewMockClientConn(mockCtrl)
 			cl.EXPECT().RoundTrip(gomock.Any()).DoAndReturn(func(r *http.Request) (*http.Response, error) {
 				roundTripCalled <- struct{}{}
@@ -612,7 +614,7 @@ func TestTransportCloseIdleConnectionsInFlightDial(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		dialErr := make(chan error, 1)
 		tr := &Transport{
-			Dial: func(ctx context.Context, _ string, _ *tls.Config, _ *quic.Config) (*quic.Conn, error) {
+			Dial: func(ctx context.Context, _ string, _ *tls.Config, _ *quic.Config) (quicapi.Conn, error) {
 				<-ctx.Done()
 				dialErr <- ctx.Err()
 				return nil, ctx.Err()
@@ -633,10 +635,10 @@ func TestTransportClose(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	conn, _ := newConnPair(t)
 	tr := &Transport{
-		Dial: func(ctx context.Context, addr string, tlsCfg *tls.Config, cfg *quic.Config) (*quic.Conn, error) {
+		Dial: func(ctx context.Context, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quicapi.Conn, error) {
 			return conn, nil
 		},
-		newClientConn: func(*quic.Conn) clientConn {
+		newClientConn: func(quicapi.Conn) clientConn {
 			cl := NewMockClientConn(mockCtrl)
 			cl.EXPECT().RoundTrip(gomock.Any()).Return(nil, nil)
 			return cl

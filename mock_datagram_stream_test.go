@@ -14,6 +14,8 @@ import (
 	reflect "reflect"
 	time "time"
 
+	quicapi "github.com/c2FmZQ/quic-api"
+
 	quic "github.com/quic-go/quic-go"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -191,10 +193,10 @@ func (c *MockDatagramStreamContextCall) DoAndReturn(f func() context.Context) *M
 }
 
 // QUICStream mocks base method.
-func (m *MockDatagramStream) QUICStream() *quic.Stream {
+func (m *MockDatagramStream) QUICStream() quicapi.Stream {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "QUICStream")
-	ret0, _ := ret[0].(*quic.Stream)
+	ret0, _ := ret[0].(quicapi.Stream)
 	return ret0
 }
 
@@ -211,19 +213,19 @@ type MockDatagramStreamQUICStreamCall struct {
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockDatagramStreamQUICStreamCall) Return(arg0 *quic.Stream) *MockDatagramStreamQUICStreamCall {
+func (c *MockDatagramStreamQUICStreamCall) Return(arg0 quicapi.Stream) *MockDatagramStreamQUICStreamCall {
 	c.Call = c.Call.Return(arg0)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockDatagramStreamQUICStreamCall) Do(f func() *quic.Stream) *MockDatagramStreamQUICStreamCall {
+func (c *MockDatagramStreamQUICStreamCall) Do(f func() quicapi.Stream) *MockDatagramStreamQUICStreamCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockDatagramStreamQUICStreamCall) DoAndReturn(f func() *quic.Stream) *MockDatagramStreamQUICStreamCall {
+func (c *MockDatagramStreamQUICStreamCall) DoAndReturn(f func() quicapi.Stream) *MockDatagramStreamQUICStreamCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
